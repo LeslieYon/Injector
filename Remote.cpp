@@ -114,7 +114,7 @@ __declspec(naked) void WINAPI AddHeight_Hook()
         ".att_syntax noprefix\n\t");
 }
 
-#pragma pack (1)
+
 void *inlineHookAddr;
 
 BOOL isListenHeightAdd = FALSE;
@@ -132,11 +132,13 @@ DWORD WINAPI SetupInlineHook(_In_ LPVOID lpParameter) {
         memcpy(inlineHookAddr, buffer, sizeof(buffer));
         BridgeSendMessage(Opcode_RemoteThread_Listen_HeightAdd_Stop, nullptr,0,remote, true);
     } else {
+#pragma pack (1)
         struct {
             BYTE call = 0xe8;
             DWORD addr = 0;
             BYTE nop = 0x90;
         } call;
+#pragma pack ()
         call.addr = (DWORD) AddHeight_Hook - ((DWORD) inlineHookAddr + sizeof(buffer) - 1);
         memcpy(inlineHookAddr, &call, sizeof(call));
         BridgeSendMessage(Opcode_RemoteThread_Listen_HeightAdd_Start, nullptr,0,remote, true);
@@ -144,7 +146,7 @@ DWORD WINAPI SetupInlineHook(_In_ LPVOID lpParameter) {
     return 0;
 }
 
-#pragma pack (1)
+
 
 DWORD WINAPI RemoteMainLoop(_In_ LPVOID lpParameter) {
     //打开通信缓冲区
