@@ -25,8 +25,8 @@ typedef int WINAPI (*pMessageBox)(HWND hWnd,LPCWSTR lpText,LPCWSTR lpCaption,UIN
 pMessageBox ori_MessageBoxW;
 HWND hRemoteWindow;
 /**
- * @Leslie 通过InlineHook调用的函数，原型应该与被Hook的函数一致.
- * @return
+ * @LeslieYon 通过InlineHook调用的函数，原型应该与被Hook的函数一致.
+ * @return 原始MessageBox的返回值.
  */
 int WINAPI Hook_MessageBoxW(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType) {
     hRemoteWindow = hWnd;
@@ -104,6 +104,9 @@ void SendInitFailed(LPCWSTR Reason)
     BridgeSendMessage(Opcode_RemoteThread_Init_Failed,(void*)Reason, wcslen(Reason)*2 + 2,remote, true);
 }
 
+/**
+ * @LeslieYon 用于InlineHook的裸函数.
+ */
 __declspec(naked) void WINAPI AddHeight_Hook()
 {
     asm(".intel_syntax noprefix\n\t"
@@ -113,7 +116,6 @@ __declspec(naked) void WINAPI AddHeight_Hook()
         "jmp [esp-8]\n\t"
         ".att_syntax noprefix\n\t");
 }
-
 
 void *inlineHookAddr;
 
@@ -132,23 +134,24 @@ DWORD WINAPI SetupInlineHook(_In_ LPVOID lpParameter) {
         memcpy(inlineHookAddr, buffer, sizeof(buffer));
         BridgeSendMessage(Opcode_RemoteThread_Listen_HeightAdd_Stop, nullptr,0,remote, true);
     } else {
-#pragma pack (1)
-        struct {
+        #pragma pack (1)
+        struct Call{
             BYTE call = 0xe8;
             DWORD addr = 0;
             BYTE nop = 0x90;
-        } call;
-#pragma pack ()
-        call.addr = (DWORD) AddHeight_Hook - ((DWORD) inlineHookAddr + sizeof(buffer) - 1);
-        memcpy(inlineHookAddr, &call, sizeof(call));
+        };
+        #pragma pack ()
+        Call* call = new(inlineHookAddr)Call;
+        call->addr = (DWORD) AddHeight_Hook - ((DWORD) inlineHookAddr + sizeof(buffer) - 1);
         BridgeSendMessage(Opcode_RemoteThread_Listen_HeightAdd_Start, nullptr,0,remote, true);
     }
     return 0;
 }
 
-
-
-DWORD WINAPI RemoteMainLoop(_In_ LPVOID lpParameter) {
+/**
+ * @LeslieYon 远程线程接收消息主循环.
+ */
+DWORD WINAPI RemoteMainLoop(_In_ LPVOID) {
     //打开通信缓冲区
     CreateSharedMemory();
     //创建互斥体
@@ -246,8 +249,8 @@ DWORD WINAPI RemoteMainLoop(_In_ LPVOID lpParameter) {
 
 /**
  * 通过方式2注入进程时，模块开始执行的入口点,
- * 此函数原型应与ThreadProc函数一致.
- * 此函数返回值作为线程退出代码传递给父进程
+ * 此函数原型应与ThreadProc函数一致,
+ * 此函数返回值作为线程退出代码传递给父进程.
  */
 extern "C" __declspec(dllexport) DWORD WINAPI Entry(DWORD ImageBase) {
     //注入代码运行第一步：重新修复导入表
