@@ -12,4 +12,4 @@
 * 简易的安全多线程编程
 * 其它一些细节  
 ------  
-![image](https://user-images.githubusercontent.com/43743875/164887880-9adf7d51-162d-44ae-8fd0-9e71fbd032b6.png)
+![GIF](https://user-images.githubusercontent.com/43743875/165267417-d87e2a01-c0a5-4567-8300-b435f9b88c5b.gif)
